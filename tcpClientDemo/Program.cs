@@ -11,15 +11,63 @@ namespace tcpClientDemo
         static void Main(string[] args)
         {
             string serverIP = IPAddress.Loopback.ToString();
-            string message = "Hello";
+            int port = 5556;
 
-            Connect(serverIP, message);
+            TcpClient client;
 
+            NetworkStream stream;
+
+            try
+            {
+                client = Connect(serverIP, port);
+                stream = client.GetStream();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed to get TCP Client, Exception: " + ex.Message);
+                return;
+            }
+
+            string message = "";
+
+            while (message != "exit()")
+            {
+                Console.WriteLine("> ");
+                message = Console.ReadLine();
+
+                Byte[] data = new byte[256];
+
+                data = System.Text.Encoding.ASCII.GetBytes(message);
+
+                stream.Write(data, 0, data.Length);
+
+                data = new byte[256];
+                string responseMessage = "";
+
+                int bytes = stream.Read(data, 0, data.Length);
+                responseMessage = System.Text.Encoding.ASCII.GetString(data, 0, bytes);
+
+                Console.WriteLine("Received: " + responseMessage);
+            }
+
+            DisconnectFromServer(client, stream);
 
             Console.ReadKey();
         }
 
-        private static void Connect(string serverIp, string message)
+        private static void DisconnectFromServer(TcpClient client, NetworkStream stream)
+        {
+            Console.WriteLine("Disconnecting");
+            client.Close();
+            stream.Close();
+        }
+
+        private static TcpClient Connect(string serverIP, int port)
+        {
+            return new TcpClient(serverIP, port);
+        }
+
+        private void Connect(string serverIp, string message)
         {
             string output = "";
 
