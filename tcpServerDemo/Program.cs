@@ -12,27 +12,31 @@ namespace tcpServerDemo
     {
         static void Main(string[] args)
         {
-            TcpListener serverSocket = new TcpListener(IPAddress.Loopback, 5556);
+            TcpListener tcpListener = new TcpListener(IPAddress.Loopback, 5556);
 
-            TcpClient clientSocket = null;
+            Socket listenSock = new Socket(SocketType.Stream, ProtocolType.Tcp);
 
-            serverSocket.Start();
+            tcpListener.Start();
 
             Console.WriteLine("Server Started");
 
-            while (true)
+            Console.WriteLine("Waiting for connection...");
+
+            TcpClient client = tcpListener.AcceptTcpClient();
+
+            Console.WriteLine("Connection Accepted " + client.Client.RemoteEndPoint);
+
+            while (client.Connected)
             {
                 Thread.Sleep(10);
 
-                TcpClient tcpClient = serverSocket.AcceptTcpClient();
-
                 byte[] bytes = new byte[256];
-                NetworkStream stream = tcpClient.GetStream();
+                NetworkStream stream = client.GetStream();
 
                 stream.Read(bytes, 0, bytes.Length);
                 SocketHelper helper = new SocketHelper();
 
-                helper.processMsg(tcpClient, stream, bytes);
+                helper.processMsg(client, stream, bytes);
             }
         }
     }
