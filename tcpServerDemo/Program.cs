@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -10,33 +11,56 @@ namespace tcpServerDemo
 {
     class Program
     {
-        static void Main(string[] args)
+        static TcpListener Listener;
+        
+        static void Main()
         {
-            TcpListener tcpListener = new TcpListener(IPAddress.Loopback, 5556);
+            Listener = new TcpListener(IPAddress.Loopback, 5556);
+            Listener.Start();
 
-            Socket listenSock = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            Console.WriteLine("Listening on port 5556");
 
-            tcpListener.Start();
-
-            Console.WriteLine("Server Started");
-
-            Console.WriteLine("Waiting for connection...");
-
-            TcpClient client = tcpListener.AcceptTcpClient();
-
-            Console.WriteLine("Connection Accepted " + client.Client.RemoteEndPoint);
-
-            while (client.Connected)
+            while (true)
             {
-                Thread.Sleep(10);
+                // Blocking call that waits on a client.
+                Console.WriteLine("Waiting on connection...");
+                TcpClient client = Listener.AcceptTcpClient();
 
-                byte[] bytes = new byte[256];
-                NetworkStream stream = client.GetStream();
+                Console.WriteLine($"Connection Accepted! {client.Client.RemoteEndPoint}");
 
-                stream.Read(bytes, 0, bytes.Length);
-                SocketHelper helper = new SocketHelper();
+                try
+                {
+                    NetworkStream stream = client.GetStream();
 
-                helper.processMsg(client, stream, bytes);
+                    StreamReader reader = new StreamReader(stream);
+                    StreamWriter writer = new StreamWriter(stream);
+                    writer.AutoFlush = true;
+
+                    while (true)
+                    {
+                        string message = reader.ReadLine();
+
+                        string response = "";
+                        if (message == "Hello")
+                        {
+                            response = "Bye";
+                        }
+                        else
+                        {
+                            response = "What?";
+                        }
+
+                        writer.WriteLine(response);
+                    }
+                    stream.Close();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
+                Console.WriteLine("Disconnected");
+
+                client.Close();
             }
         }
     }
