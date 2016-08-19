@@ -28,40 +28,48 @@ namespace tcpServerDemo
 
                 Console.WriteLine($"Connection Accepted! {client.Client.RemoteEndPoint}");
 
-                try
-                {
-                    NetworkStream stream = client.GetStream();
-
-                    StreamReader reader = new StreamReader(stream);
-                    StreamWriter writer = new StreamWriter(stream);
-                    writer.AutoFlush = true;
-
-                    while (true)
-                    {
-                        string message = reader.ReadLine();
-
-                        string response = "";
-                        if (message == "Hello")
-                        {
-                            response = "Bye";
-                        }
-                        else
-                        {
-                            response = "What?";
-                        }
-
-                        writer.WriteLine(response);
-                    }
-                    stream.Close();
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                }
-                Console.WriteLine("Disconnected");
-
-                client.Close();
+                // ThreadPool is recommended vs handling threads on your own apparently.
+//                ThreadPool.QueueUserWorkItem(_ => HandleClient(client));
+                Thread worker = new Thread(new ThreadStart(() => HandleClient(client)));
+                worker.Start();
             }
+        }
+
+        private static void HandleClient(TcpClient client)
+        {
+            try
+            {
+                NetworkStream stream = client.GetStream();
+
+                StreamReader reader = new StreamReader(stream);
+                StreamWriter writer = new StreamWriter(stream);
+                writer.AutoFlush = true;
+
+                while (true)
+                {
+                    string message = reader.ReadLine();
+
+                    string response = "";
+                    if (message == "Hello")
+                    {
+                        response = "Bye";
+                    }
+                    else
+                    {
+                        response = "What?";
+                    }
+
+                    writer.WriteLine(response);
+                }
+                stream.Close();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+
+            Console.WriteLine("Disconnected");
+            client.Close();
         }
     }
 }
